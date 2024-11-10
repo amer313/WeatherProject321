@@ -1,0 +1,51 @@
+/* Recommendation Section */
+.recommendation {
+  margin-top: 30px;
+  padding: 1.5rem;
+  background-color: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  color: #333;
+  text-align: center;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.app.dark .recommendation {
+  background-color: rgba(0, 0, 0, 0.85);
+  color: #f8f8f8;
+}
+
+.recommendation h2 {
+  font-size: 1.8rem;
+  margin-bottom: 10px;
+}
+
+.recommendation p {
+  font-size: 1.2rem;
+  line-height: 1.5;
+}
+
+.map-link {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 0.5rem 1rem;
+  background-color: #0073e6;
+  color: white;
+  border-radius: 5px;
+  text-decoration: none;
+  font-size: 1rem;
+  transition: background-color 0.3s;
+}
+
+.map-link:hover {
+  background-color: #005bb5;
+}
+
+.app.dark .map-link {
+  background-color: #3399ff;
+}
+
+.app.dark .map-link:hover {
+  background-color: #1a73e8;
+}
