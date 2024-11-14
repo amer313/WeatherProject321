@@ -4,6 +4,9 @@ import Recommendation from './components/Recommendation';
 import Header from './components/Header';
 
 function App() {
+  /**
+   * constants
+   */
   const [data, setData] = useState({});
   const [location, setLocation] = useState('');
   const [units, setUnits] = useState('imperial');
@@ -12,9 +15,17 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [showErrorModal, setShowErrorModal] = useState(false); // Modal visibility state
 
+  /**
+   * api keys
+   */
   const weatherApiKey = '895284fb2d2c50a520ea537456963d9c';
   const unsplashAccessKey = 'FtmFZv1ckfIqTD2DMtmVqyu9BCTsUKB8B-IcCcEudEs';
 
+  /**
+   * gets the weather based on user location
+   * @param {*} lat 
+   * @param {*} lon 
+   */
   const fetchWeatherByCoords = async (lat, lon) => {
     setIsLoading(true);
     const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${weatherApiKey}`;
@@ -29,6 +40,9 @@ function App() {
     }
   };
 
+  /**
+   * background image based on location
+   */
   const fetchBackgroundImage = async (locationName) => {
     if (!locationName) return;
     const unsplashUrl = `https://api.unsplash.com/photos/random?query=${locationName}&client_id=${unsplashAccessKey}`;
@@ -40,19 +54,35 @@ function App() {
     }
   };
 
+  /**
+   * Gets user location + displays data based on given coordinates
+   */
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const { latitude, longitude } = position.coords;
+        const { latitude, longitude } = position.coords;        
         fetchWeatherByCoords(latitude, longitude);
       },
       (error) => {
         console.error(error);
         setIsLoading(false);
+        //if user doesnt allow loc access, set default to fairfax
+        setIsLoading(true);
+        const url = `https://api.openweathermap.org/data/2.5/weather?q=fairfax&appid=${weatherApiKey}`;
+        axios.get(url)
+          .then((response) => {
+            setData(response.data);
+            fetchBackgroundImage('fairfax');
+            setLocation('');
+            setIsLoading(false);
+          })
       }
     );
   }, []);
 
+  /**
+   * Grabs data for given location + updates page
+   */
   const searchLocation = (event) => {
     if (event.key === 'Enter') {
       setIsLoading(true);
@@ -72,18 +102,30 @@ function App() {
     }
   };
 
+  /**
+   * dark/light mode
+   */
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
   };
 
+  /**
+   * calculates wind direction 
+   */
   const getWindDirection = (degree) => {
     const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
     const index = Math.floor((degree + 22.5) / 45) % 8;
     return directions[index];
   };
+  /**
+   * set temp from data grabbed from api
+   */
   const temperatureInCelsius = data.main ? data.main.temp - 273.15 : null;
   const feelsLikeInCelsius = data.main ? data.main.feels_like - 273.15 : null;
   
+  /**
+   * updates rtemp based on if the webpage is f or c
+   */
   const displayTemperature = units === 'imperial'
     ? ((temperatureInCelsius * 9 / 5) + 32).toFixed(1)
     : temperatureInCelsius.toFixed(1);
@@ -92,15 +134,62 @@ function App() {
     ? ((feelsLikeInCelsius * 9 / 5) + 32).toFixed(1)
     : feelsLikeInCelsius.toFixed(1);  
 
+  /**
+   * units used for webpage
+   */
   const toggleUnits = () => {
     setUnits(units === 'imperial' ? 'metric' : 'imperial');
   };
 
+  /**
+   * time 
+   */
   const formatTime = (timestamp) => {
     const date = new Date(timestamp * 1000);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    var time = (date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
+    var min = time.slice(2,6)// :00 
+    var hour = time[0] + time[1]// 00 format
+    hour = parseInt(hour)
+    var yes = time.slice(6,8)
+    var change = 0
+
+    //calculate hour difference if not EST
+    if (data.timezone != -18000){
+      hour+= Math.round((data.timezone +18000)/3600)
+
+      //change hour based on that time zone
+      if (hour > 24){
+        hour-=24
+      }
+      else if(hour > 12){
+        hour-=12
+        change = 1
+      }
+      else if (hour <-12){
+        hour+=24
+      }
+      else if (hour< 0){
+        hour+=12
+        change = 1
+      }
+      //if need to change from am to pm or pm to am
+      if (change == 1){
+        if (yes === 'PM'){
+          yes = 'AM'
+        }
+        else{
+          yes = 'PM'
+        }
+      }
+      time = hour +min+ yes 
+    }
+    return time;
+    //return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  /**
+   * sets constants from api data
+   */
   const weatherDescription = data.weather ? data.weather[0].description : '';
   const locationName = data.name;
   const locationCountry = data.sys ? data.sys.country : '';
@@ -155,12 +244,12 @@ function App() {
                   <p>Humidity</p>
                 </div>
                 <div className="wind">
-                  {data.wind ? <p className="bold">{data.wind.speed.toFixed()} {units === 'imperial' ? 'MPH' : 'm/s'}</p> : null}
+                  {data.wind ? <p className="bold">{units === 'imperial' ? (data.wind.speed * 2.23694).toFixed(1) : data.wind.speed.toFixed(1)} {units === 'imperial' ? 'MPH' : 'm/s'}</p> : null}
                   {data.wind ? <p>{getWindDirection(data.wind.deg)}</p> : null}
                   <p>Wind Speed & Direction</p>
                 </div>
                 <div className="visibility">
-                  {data.visibility ? <p className="bold">{(data.visibility / 1000).toFixed(1)} km</p> : null}
+                  {data.visibility ? <p className="bold">{units === 'imperial' ? ((data.visibility / 1000)/1.609).toFixed(1) : (data.visibility / 1000).toFixed(1)} {units === 'imperial' ? 'Miles' : 'km'}</p> : null}
                   <p>Visibility</p>
                 </div>
                 <div className="clouds">
